@@ -1,12 +1,13 @@
 import { useState, useMemo } from 'react';
 import { useApp } from '@/contexts/AppContext';
 import { formatCurrency, formatDate } from '@/lib/helpers';
-import { Plus, Search, CheckCircle2, Clock, Trash2, ChevronDown, ChevronUp, DollarSign, Pencil } from 'lucide-react';
+import { Plus, Search, CheckCircle2, Clock, Trash2, ChevronDown, ChevronUp, DollarSign, Pencil, Download, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { motion, AnimatePresence } from 'framer-motion';
+import { exportDividasXLSX, importDividasXLSX } from '@/lib/xlsx-dividas';
 
 export default function DividasTab() {
   const { debts, addDebt, payDebt, removeDebt, updateDebt } = useApp();
@@ -22,6 +23,7 @@ export default function DividasTab() {
   const [amount, setAmount] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [payAmount, setPayAmount] = useState('');
+  const [importFile, setImportFile] = useState<File | null>(null);
 
   const filtered = useMemo(() => {
     let d = [...debts];
@@ -87,6 +89,37 @@ export default function DividasTab() {
     return grouped[name]?.filter(d => !d.paid).reduce((s, d) => s + d.amount, 0) || 0;
   };
 
+  const handleExportExcel = () => {
+    const exportData = debts.map(d => ({
+      id: d.id,
+      personName: d.personName,
+      description: d.description,
+      amount: d.amount,
+      date: d.date,
+      paid: d.paid,
+      paidAmount: d.paidAmount,
+    }));
+    exportDividasXLSX(exportData);
+    toast.success('Dívidas exportadas!');
+  };
+
+  const handleImportExcel = async () => {
+    if (!importFile) { toast.error('Selecione um arquivo'); return; }
+    try {
+      const data = await importDividasXLSX(importFile);
+      let count = 0;
+      for (const debt of data) {
+        addDebt(debt.personName, debt.description, debt.amount, debt.date);
+        count++;
+      }
+      toast.success(`${count} dívidas importadas!`);
+      setImportFile(null);
+    } catch (error) {
+      toast.error('Erro ao importar arquivo');
+      console.error(error);
+    }
+  };
+
   return (
     <div className="space-y-4 pb-24">
       {/* Summary */}
@@ -104,12 +137,19 @@ export default function DividasTab() {
       </div>
 
       {/* Search & Filter */}
-      <div className="flex gap-2">
-        <div className="flex-1 relative">
+      <div className="flex gap-2 flex-wrap">
+        <div className="flex-1 relative min-w-[150px]">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <Input placeholder="Buscar pessoa..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
         </div>
         <Button onClick={() => setShowAdd(true)} className="gap-1"><Plus className="w-4 h-4" /> Nova</Button>
+        <Button onClick={handleExportExcel} variant="outline" className="gap-1"><Download className="w-4 h-4" /> Excel</Button>
+      </div>
+
+      {/* Import Excel */}
+      <div className="flex gap-2 items-center p-3 bg-secondary/30 rounded-lg">
+        <Input type="file" accept=".xlsx,.xls" onChange={e => setImportFile(e.target.files?.[0] || null)} className="flex-1" />
+        <Button onClick={handleImportExcel} disabled={!importFile} variant="secondary" className="gap-1"><Upload className="w-4 h-4" /> Importar</Button>
       </div>
 
       <div className="flex gap-1.5">

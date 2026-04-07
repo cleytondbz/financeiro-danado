@@ -3,12 +3,14 @@ import { useApp } from '@/contexts/AppContext';
 import { formatCurrency, getDaysInMonth, getDayOfWeek, dateStr } from '@/lib/helpers';
 import { DAY_NAMES } from '@/lib/types';
 import MonthSelector from '@/components/MonthSelector';
-import { Plus, Settings2, Pencil, Trash2, X, Check, GripVertical } from 'lucide-react';
+import { Plus, Settings2, Pencil, Trash2, X, Check, GripVertical, Download, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { exportLancamentosXLSX, importLancamentosXLSX } from '@/lib/xlsx-lancamentos';
+import { MONTH_NAMES } from '@/lib/types';
 
 export default function LancamentosTab() {
   const { getCategories, getMonthData, saveEntry, deleteEntry, addCategory, removeCategory, updateCategory, selectedYear, selectedMonth } = useApp();
@@ -26,6 +28,7 @@ export default function LancamentosTab() {
   const [newCatOp, setNewCatOp] = useState<'add' | 'subtract' | 'null'>('add');
   const [keepOpen, setKeepOpen] = useState(false);
   const [draggedCat, setDraggedCat] = useState<string | null>(null);
+  const [importFile, setImportFile] = useState<File | null>(null);
 
   const monthTotal = useMemo(() => {
     let t = 0;
@@ -122,14 +125,56 @@ export default function LancamentosTab() {
     }
   };
 
+  const handleExportExcel = () => {
+    const entries = allDays.map(({ day, ds, entry }) => ({
+      date: ds,
+      day,
+      values: entry?.values || {},
+      total: getDayTotal(ds),
+    }));
+
+    exportLancamentosXLSX({
+      year: selectedYear,
+      month: selectedMonth,
+      monthName: MONTH_NAMES[selectedMonth - 1],
+      categories: cats,
+      entries,
+    });
+    toast.success('Lançamentos exportados!');
+  };
+
+  const handleImportExcel = async () => {
+    if (!importFile) { toast.error('Selecione um arquivo'); return; }
+    try {
+      const data = await importLancamentosXLSX(importFile, cats);
+      let count = 0;
+      for (const [date, values] of Object.entries(data)) {
+        saveEntry(date, values);
+        count++;
+      }
+      toast.success(`${count} lançamentos importados!`);
+      setImportFile(null);
+    } catch (error) {
+      toast.error('Erro ao importar arquivo');
+      console.error(error);
+    }
+  };
+
   return (
     <div className="space-y-3 pb-24">
       <MonthSelector />
 
       {/* Actions */}
-      <div className="flex gap-2">
+      <div className="flex gap-2 flex-wrap">
         <Button onClick={openAdd} className="flex-1 gap-1"><Plus className="w-4 h-4" /> Lançar</Button>
         <Button onClick={() => setShowCatMgr(true)} variant="secondary" className="gap-1"><Settings2 className="w-4 h-4" /> Categorias</Button>
+        <Button onClick={handleExportExcel} variant="outline" className="gap-1"><Download className="w-4 h-4" /> Excel</Button>
+      </div>
+
+      {/* Import Excel */}
+      <div className="flex gap-2 items-center p-3 bg-secondary/30 rounded-lg">
+        <Input type="file" accept=".xlsx,.xls" onChange={e => setImportFile(e.target.files?.[0] || null)} className="flex-1" />
+        <Button onClick={handleImportExcel} disabled={!importFile} variant="secondary" className="gap-1"><Upload className="w-4 h-4" /> Importar</Button>
       </div>
 
       {/* Total bar */}
