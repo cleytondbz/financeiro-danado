@@ -5,7 +5,7 @@
   "license": "MIT",
   "scripts": {
     "dev": "concurrently \"vite --host\" \"tsx watch server.ts\"",
-    "build": "vite build && esbuild api/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist && mv dist/index.js dist/api.js && cp index.mjs dist/index.js",
+  "build": "vite build && esbuild api/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist && node build-fix.mjs",
     "start": "NODE_ENV=production node --experimental-modules dist/server.js",
     "preview": "vite preview --host",
     "check": "tsc --noEmit",
