@@ -1,5 +1,5 @@
 import { jsPDF } from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 import { formatCurrency } from './helpers';
 import { MONTH_NAMES, type Category } from './types';
 
@@ -69,7 +69,7 @@ export function exportReportPDF(data: ReportData) {
     cat.operation === 'add' ? '+ Soma' : cat.operation === 'subtract' ? '- Subtrai' : 'Nulo',
   ]);
 
-  (doc as any).autoTable({
+  autoTable(doc, {
     head: [['Categoria', 'Valor', 'Operação']],
     body: categoryRows,
     startY: yPos,
@@ -97,7 +97,7 @@ export function exportReportPDF(data: ReportData) {
     formatCurrency(d.total),
   ]);
 
-  (doc as any).autoTable({
+  autoTable(doc, {
     head: [['Dia', 'Total']],
     body: dailyRows,
     startY: yPos,
@@ -122,7 +122,7 @@ export function exportReportPDF(data: ReportData) {
 
     const storeRows = data.stores.map(s => [s.name, formatCurrency(s.total)]);
 
-    (doc as any).autoTable({
+    autoTable(doc, {
       head: [['Loja', 'Total']],
       body: storeRows,
       startY: yPos,
