@@ -2,10 +2,9 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const __dirname = path.dirname(fileURLToPath(import.meta.url ));
 
 try {
-  // Rename dist/index.js to dist/api.js
   const indexPath = path.join(__dirname, 'dist', 'index.js');
   const apiPath = path.join(__dirname, 'dist', 'api.js');
   
@@ -14,7 +13,6 @@ try {
     console.log('✓ Renamed dist/index.js to dist/api.js');
   }
 
-  // Copy index.mjs to dist/index.js
   const indexMjsPath = path.join(__dirname, 'index.mjs');
   const distIndexPath = path.join(__dirname, 'dist', 'index.js');
   
@@ -23,8 +21,8 @@ try {
     console.log('✓ Copied index.mjs to dist/index.js');
   }
 
-  console.log('✓ Build post-processing completed successfully');
+  console.log('✓ Build post-processing completed');
 } catch (error) {
-  console.error('✗ Error during build post-processing:', error.message);
+  console.error('✗ Error:', error.message);
   process.exit(1);
 }
